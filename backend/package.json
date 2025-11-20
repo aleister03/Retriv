@@ -1,8 +1,6 @@
 {
-  "name": "lost-and-found-backend",
+  "name": "retriv-backend",
   "version": "1.0.0",
-  "description": "Backend for Lost & Found System",
-  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"

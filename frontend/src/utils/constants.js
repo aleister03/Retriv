@@ -1,36 +1,39 @@
-export const SERVICES = [
-  {
-    id: 1,
-    title: 'Lost & Found',
-    description: 'Report missing items and help others find theirs',
-    icon: 'IconSearch',
-    color: 'blue',
+export const COLORS = {
+  light: {
+    background: '#F8F9FA',
+    surface: '#FFFFFF',
+    elevatedSurface: '#F1F1F4',
+    primaryAccent: '#00C7A5',
+    secondaryAccent: '#7C4DFF',
+    hoverAccent: '#26E0BE',
+    textPrimary: '#0A0A0A',
+    textSecondary: '#565656',
+    borders: '#DADCE0',
+    success: '#2ECC71',
+    warning: '#F39C12',
+    error: '#E74C3C'
   },
-  {
-    id: 2,
-    title: 'Marketplace',
-    description: 'Buy and sell products in your community',
-    icon: 'IconShoppingCart',
-    color: 'teal',
-  },
-  {
-    id: 3,
-    title: 'Exchange',
-    description: 'Trade items with other users',
-    icon: 'IconArrowsExchange',
-    color: 'purple',
-  },
-];
+  dark: {
+    background: '#0F0F11',      
+    surface: '#1A1B1E',          
+    elevatedSurface: '#34363A',  
+    primaryAccent: '#4FFFD7',   
+    secondaryAccent: '#7C4DFF',
+    hoverAccent: '#6CFFE2',      
+    textPrimary: '#FFFFFF',      
+    textSecondary: '#B0B0B0',    
+    borders: '#34363A',         
+    success: '#2ECC71',
+    warning: '#F39C12',
+    error: '#E74C3C'
+  }
+};
 
-export const NAV_ITEMS = [
-  { label: 'Home', path: '/' },
-  { label: 'L&F', path: '/lost-found' },
-  { label: 'Marketplace', path: '/marketplace' },
-  { label: 'Exchange', path: '/exchange' },
-  { label: 'Help', path: '/help' },
-];
-
-export const APP_CONFIG = {
-  appName: 'Retriv',
-  heroTitle: "Lost Something On Campus? Let's Help You To Find It.",
+export const ROUTES = {
+  HOME: '/',
+  LOST_FOUND: '/lost-found',
+  MARKETPLACE: '/marketplace',
+  EXCHANGE: '/exchange',
+  HELP: '/help',
+  LOGIN: '/login'
 };

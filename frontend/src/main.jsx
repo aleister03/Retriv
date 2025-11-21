@@ -1,21 +1,14 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import '@mantine/core/styles.css';
-import '@mantine/notifications/styles.css';
-import { MantineProvider, createTheme } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
-import { theme } from './theme/mantineTheme.js';
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css'; // Make sure this is imported!
 
-const mantineTheme = createTheme(theme);
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <MantineProvider theme={mantineTheme} defaultColorScheme="light">
-      <Notifications />
-      <App />
-    </MantineProvider>
-  </StrictMode>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
 );
+
 

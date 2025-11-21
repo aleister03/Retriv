@@ -1,156 +1,189 @@
-import { Group, Button, Text, Switch, Avatar, Menu, useMantineColorScheme } from '@mantine/core';
-import { IconSun, IconMoonStars, IconUser, IconSettings, IconLogout } from '@tabler/icons-react';
-import { useState } from 'react';
-import { NAV_ITEMS, APP_CONFIG } from '../../utils/constants';
+import { useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ActionIcon, Button, Group, Menu, Avatar } from '@mantine/core';
+import { IconMoon, IconSun, IconUser, IconBell, IconSettings, IconLogout } from '@tabler/icons-react';
+import { ThemeContext } from '../../context/ThemeContext';
+import { AuthContext } from '../../context/AuthContext';
+import { showPageNotAvailable, showSuccess } from '../../utils/notifications';
 
-function Navbar() {
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const isDark = colorScheme === 'dark';
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+export default function Navbar() {
+  const { theme, toggleTheme, colors } = useContext(ThemeContext);
+  const { isLoggedIn, user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const handleThemeToggle = () => {
+    toggleTheme();
+  };
+
+  const handleNavigation = (path, pageName) => {
+    if (path === '/') {
+      navigate(path);
+    } else {
+      showPageNotAvailable(pageName);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    showSuccess('Logged Out', 'You have been successfully logged out');
+  };
 
   return (
-    <div
-      style={{
-        height: '60px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 40px',
-        background: isDark ? '#0E1424' : '#ffffff',
-        borderBottom: `1px solid ${isDark ? '#1E2537' : '#E5E7EB'}`,
-      }}
-    >
-      {/* Logo */}
-      <Group gap="xs">
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 8,
-            background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '1.5rem',
-            fontWeight: 700,
+    <nav style={{ 
+      padding: '1rem 2rem', 
+      display: 'flex', 
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderBottom: `1px solid ${colors.borders}`,
+      transition: 'all 0.3s ease'
+    }}>
+      <Group>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ 
+            background: colors.primaryAccent, 
+            borderRadius: '12px', 
+            padding: '8px 12px', 
+            color: 'white', 
+            fontWeight: 'bold',
+            fontSize: '1.25rem'
+          }}>R</div>
+          <div>
+            <div style={{ fontWeight: 'bold', fontSize: '1.25rem', color: colors.textPrimary }}>Retriv</div>
+            <div style={{ fontSize: '0.75rem', color: colors.textSecondary }}>Find: Trade, Connect.</div>
+          </div>
+        </div>
+      </Group>
+      
+      <Group gap="xl">
+        <Link 
+          to="/" 
+          onClick={(e) => { e.preventDefault(); handleNavigation('/', 'Home'); }}
+          style={{ textDecoration: 'none', color: colors.textPrimary, fontWeight: 500, cursor: 'pointer' }}
+        >
+          Home
+        </Link>
+        <span 
+          onClick={() => handleNavigation('/lost-found', 'Lost & Found')}
+          style={{ textDecoration: 'none', color: colors.textPrimary, fontWeight: 500, cursor: 'pointer' }}
+        >
+          L&F
+        </span>
+        <span 
+          onClick={() => handleNavigation('/marketplace', 'Marketplace')}
+          style={{ textDecoration: 'none', color: colors.textPrimary, fontWeight: 500, cursor: 'pointer' }}
+        >
+          Marketplace
+        </span>
+        <span 
+          onClick={() => handleNavigation('/exchange', 'Exchange')}
+          style={{ textDecoration: 'none', color: colors.textPrimary, fontWeight: 500, cursor: 'pointer' }}
+        >
+          Exchange
+        </span>
+        <span 
+          onClick={() => handleNavigation('/help', 'Help')}
+          style={{ textDecoration: 'none', color: colors.textPrimary, fontWeight: 500, cursor: 'pointer' }}
+        >
+          Help
+        </span>
+      </Group>
+
+      <Group>
+        <ActionIcon 
+          onClick={handleThemeToggle} 
+          variant="subtle"
+          size="lg"
+          style={{ 
+            color: colors.textSecondary,
+            cursor: 'pointer'
           }}
         >
-          R
-        </div>
-        <div>
-          <Text size="xl" fw={700} c={isDark ? 'white' : '#1F2937'}>
-            {APP_CONFIG.appName}
-          </Text>
-          <Text size="xs" c={isDark ? '#9CA3AF' : '#6B7280'}>
-            Find: Trade, Connect.
-          </Text>
-        </div>
-      </Group>
-
-      {/* Navigation Links */}
-      <Group gap="xs">
-        {NAV_ITEMS.map((item) => (
-          <Button
-            key={item.path}
-            variant="subtle"
-            size="md"
-            c={isDark ? '#E5E7EB' : '#374151'}
-            style={{
-              transition: 'all 0.2s ease',
-              fontWeight: 500,
-            }}
-            styles={{
-              root: {
-                '&:hover': {
-                  backgroundColor: isDark ? '#2A3450' : '#EEF1FF',
-                  transform: 'translateY(-1px)',
-                },
-              },
-            }}
-          >
-            {item.label}
-          </Button>
-        ))}
-      </Group>
-
-      {/* Right side: Dark Mode Toggle and Login/Profile */}
-      <Group gap="md">
-        <Switch
-          size="md"
-          color="indigo"
-          checked={isDark}
-          onChange={() => toggleColorScheme()}
-          onLabel={<IconSun size={16} stroke={2.5} />}
-          offLabel={<IconMoonStars size={16} stroke={2.5} />}
-          styles={{
-            track: {
-              cursor: 'pointer',
-            },
-          }}
-        />
+          {theme === 'light' ? <IconMoon size={20} /> : <IconSun size={20} />}
+        </ActionIcon>
 
         {isLoggedIn ? (
-          <Menu shadow="md" width={200}>
+          <Menu shadow="md" width={200} position="bottom-end">
             <Menu.Target>
-              <Avatar
-                radius="xl"
-                size="md"
-                style={{
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                color="indigo"
+              <ActionIcon 
+                variant="subtle"
+                size="lg"
+                style={{ cursor: 'pointer' }}
               >
-                <IconUser size={20} />
-              </Avatar>
+                <Avatar 
+                  src={user?.avatar} 
+                  alt={user?.name || 'User'} 
+                  size="sm"
+                  color={colors.primaryAccent}
+                >
+                  {user?.name?.[0] || 'U'}
+                </Avatar>
+              </ActionIcon>
             </Menu.Target>
 
-            <Menu.Dropdown>
-              <Menu.Label>Account</Menu.Label>
-              <Menu.Item leftSection={<IconUser size={16} />}>
+            <Menu.Dropdown 
+              style={{ 
+                backgroundColor: colors.surface,
+                border: `1px solid ${colors.borders}`,
+                color: colors.textPrimary
+              }}
+            >
+              <Menu.Item 
+                leftSection={<IconUser size={16} style={{ color: colors.textPrimary }} />}
+                onClick={() => handleNavigation('/profile', 'Profile')}
+                style={{ 
+                  fontSize: '14px',
+                  color: colors.textPrimary
+                }}
+              >
                 Profile
               </Menu.Item>
-              <Menu.Item leftSection={<IconSettings size={16} />}>
+              <Menu.Item 
+                leftSection={<IconBell size={16} style={{ color: colors.textPrimary }} />}
+                onClick={() => handleNavigation('/notifications', 'Notifications')}
+                style={{ 
+                  fontSize: '14px',
+                  color: colors.textPrimary
+                }}
+              >
+                Notifications
+              </Menu.Item>
+              <Menu.Item 
+                leftSection={<IconSettings size={16} style={{ color: colors.textPrimary }} />}
+                onClick={() => handleNavigation('/settings', 'Settings')}
+                style={{ 
+                  fontSize: '14px',
+                  color: colors.textPrimary
+                }}
+              >
                 Settings
               </Menu.Item>
-              <Menu.Divider />
+              <Menu.Divider style={{ borderColor: colors.borders }} />
               <Menu.Item 
-                color="red" 
                 leftSection={<IconLogout size={16} />}
-                onClick={() => setIsLoggedIn(false)}
+                onClick={handleLogout}
+                color="red"
+                style={{ 
+                  fontSize: '14px'
+                }}
               >
                 Logout
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>
         ) : (
-          <Button
-            variant="subtle"
-            size="md"
-            c={isDark ? '#E5E7EB' : '#374151'}
-            onClick={() => setIsLoggedIn(true)}
-            style={{
-              transition: 'all 0.2s ease',
-              fontWeight: 500,
+          <Button 
+            variant="outline" 
+            style={{ 
+              borderColor: colors.primaryAccent,
+              color: colors.primaryAccent
             }}
-            styles={{
-              root: {
-                '&:hover': {
-                  backgroundColor: isDark ? '#2A3450' : '#EEF1FF',
-                  transform: 'translateY(-1px)',
-                },
-              },
-            }}
+            onClick={() => navigate('/login')}
           >
             Login / Sign up
           </Button>
         )}
       </Group>
-    </div>
+    </nav>
   );
 }
-
-export default Navbar;

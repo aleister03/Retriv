@@ -1,13 +1,11 @@
 import HeroSection from '../components/home/HeroSection';
 import ServiceGrid from '../components/home/ServiceGrid';
 
-function Home() {
+export default function HomePage() {
   return (
-    <>
+    <div>
       <HeroSection />
       <ServiceGrid />
-    </>
+    </div>
   );
 }
-
-export default Home;

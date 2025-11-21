@@ -17,7 +17,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <MantineProvider>
-          <Notifications position="top-center" zIndex={9999} limit={3} />
+          <Notifications position="bottom-right" zIndex={9999} limit={3} />
           <Router>
             <div style={{ 
               minHeight: '100vh', 

@@ -17,4 +17,3 @@ export const theme = {
   fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
   defaultRadius: 'md',
 };
-

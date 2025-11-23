@@ -1,69 +1,66 @@
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconX, IconInfoCircle, IconAlertTriangle } from '@tabler/icons-react';
 import { createElement } from 'react';
+import { COLORS } from './constants';
 
-// Standard notification styles
-const notificationConfig = {
-  autoClose: 3000,
-  withCloseButton: true,
+const getNotificationColor = (type, theme = 'light') => {
+  switch (type) {
+    case 'success': return COLORS[theme].success;
+    case 'error': return COLORS[theme].error;
+    case 'warning': return COLORS[theme].warning;
+    case 'info': return COLORS[theme].info;
+    default: return COLORS[theme].primaryAccent;
+  }
 };
 
-// Success notification
-export const showSuccess = (title, message) => {
+const notificationConfig = {
+  autoClose: 3500,
+  withCloseButton: true,
+  position: 'bottom-right'
+};
+
+export const showSuccess = (title, message, theme = 'light', autoClose = 3500) =>
   notifications.show({
     ...notificationConfig,
-    title: title,
-    message: message,
-    color: 'green',
+    autoClose,
+    title,
+    message,
+    color: getNotificationColor('success', theme),
     icon: createElement(IconCheck, { size: 18 }),
   });
-};
 
-// Error notification
-export const showError = (title, message) => {
+export const showError = (title, message, theme = 'light', autoClose = 3500) =>
   notifications.show({
     ...notificationConfig,
-    title: title,
-    message: message,
-    color: 'red',
+    autoClose,
+    title,
+    message,
+    color: getNotificationColor('error', theme),
     icon: createElement(IconX, { size: 18 }),
   });
-};
 
-// Warning notification (for "Not Available Yet")
-export const showWarning = (title, message) => {
+export const showWarning = (title, message, theme = 'light', autoClose = 3500) =>
   notifications.show({
     ...notificationConfig,
-    title: title,
-    message: message,
-    color: 'yellow',
+    autoClose,
+    title,
+    message,
+    color: getNotificationColor('warning', theme),
     icon: createElement(IconAlertTriangle, { size: 18 }),
   });
-};
 
-// Info notification
-export const showInfo = (title, message) => {
+export const showInfo = (title, message, theme = 'light', autoClose = 3500) =>
   notifications.show({
     ...notificationConfig,
-    title: title,
-    message: message,
-    color: 'blue',
+    autoClose,
+    title,
+    message,
+    color: getNotificationColor('info', theme),
     icon: createElement(IconInfoCircle, { size: 18 }),
   });
-};
 
-// Page not available notification (reusable for all pages)
-export const showPageNotAvailable = (pageName) => {
-  showWarning(
-    'Not Available Yet',
-    `${pageName} page is currently under development`
-  );
-};
+export const showPageNotAvailable = (pageName, theme = 'light') =>
+  showWarning('Not Available Yet', `${pageName} page is currently under development`, theme);
 
-// Maintenance notification
-export const showMaintenanceMode = (pageName) => {
-  showWarning(
-    'Under Maintenance',
-    `${pageName} is temporarily unavailable for maintenance`
-  );
-};
+export const showMaintenanceMode = (pageName, theme = 'light') =>
+  showWarning('Under Maintenance', `${pageName} is temporarily unavailable for maintenance`, theme);

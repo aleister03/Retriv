@@ -1,24 +1,31 @@
-// backend server for our app
 const express = require('express');
 const dotenv = require('dotenv');
+const cors = require('cors');
 
-dotenv.config() //loads environment variables
+// Load environment variables
+dotenv.config();
 
 const connectDB = require('./config/db');
+const passport = require('./config/passport');
+// Connect to MongoDB
 connectDB();
-const app = express(); //app initialization
 
-//middleware
+// Initialize Express app
+const app = express();
+
+// Middleware
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(passport.initialize());
+app.use(express.urlencoded({ extended: true }));
 
-//routes and verify API running
-app.get('/', (req, res) => {
-    res.json({message: 'Retriv API is running'});
-});
+// Test route
+app.use('/api/auth', require('./routes/authRoutes'));
+app.get('/', (req, res) => res.json({ message: 'Retriv API is running...' }));
 
-const PORT = process.env.PORT || 5000; //server configuration, using port(environment) or 5000(default)
+// Port
+const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => { //server initialization
-    console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

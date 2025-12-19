@@ -2,28 +2,16 @@ const express = require('express');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-
 const router = express.Router();
+const { verifyToken, checkUserStatus } = require('../middleware/auth'); // Import from new middleware
 
-
-const verifyToken = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(401).json({ message: 'Invalid token' });
-    req.userId = decoded.id;
-    next();
-  });
-};
-
-
+// Google OAuth
 router.get(
   '/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-
+// Google OAuth Callback
 router.get(
   '/google/callback',
   passport.authenticate('google', {
@@ -36,33 +24,31 @@ router.get(
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE }
     );
-
     const isNewUser = req.user.isNewUser || false;
-
     res.redirect(
       `${process.env.CLIENT_URL}/auth/success?token=${token}&isNewUser=${isNewUser}`
     );
   }
 );
 
-
+// Email-only login
 router.post('/email-login', async (req, res) => {
   try {
     const { email } = req.body;
-
     
+    // Validate email
     if (!email || !email.includes('@')) {
       return res.status(400).json({ message: 'Valid email is required' });
     }
-
-    const normalizedEmail = email.toLowerCase().trim();
-
     
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // Find existing user
     let user = await User.findOne({ email: normalizedEmail });
     let isNewUser = false;
-
-    if (!user) {
     
+    if (!user) {
+      // Create new user
       const userName = normalizedEmail.split('@')[0];
       user = await User.create({
         email: normalizedEmail,
@@ -71,16 +57,38 @@ router.post('/email-login', async (req, res) => {
         isVerified: false,
       });
       isNewUser = true;
+    } else {
+      // Check if user is banned or suspended
+      if (user.isBanned) {
+        return res.status(403).json({ 
+          success: false,
+          isBanned: true,
+          message: `Your account has been banned. Reason: ${user.banReason || 'No reason provided'}`,
+          banReason: user.banReason,
+        });
+      }
+      
+      if (user.isCurrentlySuspended()) {
+        const remainingTime = Math.ceil((user.suspendedUntil - new Date()) / (1000 * 60 * 60));
+        return res.status(403).json({ 
+          success: false,
+          isSuspended: true,
+          message: `Your account is suspended until ${user.suspendedUntil.toLocaleString()}`,
+          suspensionReason: user.suspensionReason,
+          suspendedUntil: user.suspendedUntil,
+          remainingHours: remainingTime,
+        });
+      }
     }
-
     
+    // Generate JWT token
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE }
     );
-
     
+    // Return token, user info, and isNewUser flag
     res.json({
       success: true,
       token,
@@ -91,6 +99,7 @@ router.post('/email-login', async (req, res) => {
         profilePicture: user.profilePicture || '',
         isVerified: user.isVerified,
         reputationScore: user.reputationScore,
+        isAdmin: user.isAdmin,
       },
     });
   } catch (error) {
@@ -99,8 +108,8 @@ router.post('/email-login', async (req, res) => {
   }
 });
 
-
-router.get('/profile', verifyToken, async (req, res) => {
+// Get user profile 
+router.get('/profile', verifyToken, checkUserStatus, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-googleId -__v');
     if (!user) {
@@ -116,12 +125,11 @@ router.get('/profile', verifyToken, async (req, res) => {
   }
 });
 
-// Update basic profile info
-router.put('/profile', verifyToken, async (req, res) => {
+// Update basic profile info 
+router.put('/profile', verifyToken, checkUserStatus, async (req, res) => {
   try {
     const { name, address, gender, phoneNumber } = req.body;
     const updates = {};
-
     if (name) updates.name = name;
     if (address !== undefined) updates.address = address;
     if (gender !== undefined) updates.gender = gender;
@@ -146,11 +154,10 @@ router.put('/profile', verifyToken, async (req, res) => {
   }
 });
 
-
-router.put('/profile/picture', verifyToken, async (req, res) => {
+// Update profile picture
+router.put('/profile/picture', verifyToken, checkUserStatus, async (req, res) => {
   try {
     const { profilePicture } = req.body;
-
     if (!profilePicture) {
       return res
         .status(400)
@@ -176,11 +183,10 @@ router.put('/profile/picture', verifyToken, async (req, res) => {
   }
 });
 
-
-router.put('/profile/lock', verifyToken, async (req, res) => {
+// Toggle profile lock
+router.put('/profile/lock', verifyToken, checkUserStatus, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

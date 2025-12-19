@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    enum: ['Male', 'Female', ''],
+    enum: ['Male', 'Female',''],
     default: '',
   },
   reputationScore: {
@@ -52,6 +52,49 @@ const userSchema = new mongoose.Schema({
   isAdmin: {
     type: Boolean,
     default: false,
+  },
+  promotedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  promotedAt: {
+    type: Date,
+    default: null,
+  },
+  isBanned: {
+    type: Boolean,
+    default: false,
+  },
+  banReason: {
+    type: String,
+    default: '',
+  },
+  bannedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  bannedAt: {
+    type: Date,
+    default: null,
+  },
+  isSuspended: {
+    type: Boolean,
+    default: false,
+  },
+  suspensionReason: {
+    type: String,
+    default: '',
+  },
+  suspendedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  suspendedUntil: {
+    type: Date,
+    default: null,
   },
   createdAt: {
     type: Date,
@@ -71,5 +114,23 @@ userSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
+
+userSchema.methods.isCurrentlySuspended = function() {
+  if (!this.isSuspended) return false;
+  if (!this.suspendedUntil) return false;
+  
+  // Check if suspension has expired
+  if (new Date() > this.suspendedUntil) {
+    // Auto-unsuspend
+    this.isSuspended = false;
+    this.suspendedUntil = null;
+    this.suspensionReason = '';
+    this.suspendedBy = null;
+    this.save();
+    return false;
+  }
+  
+  return true;
+};
 
 module.exports = mongoose.model('User', userSchema);

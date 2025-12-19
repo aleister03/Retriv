@@ -1,22 +1,5 @@
 import { useState, useContext } from "react";
-import {
-  TextInput,
-  Button,
-  Paper,
-  Title,
-  Group,
-  Avatar,
-  Stack,
-  Container,
-  FileInput,
-  Text,
-  Divider,
-  Box,
-  ActionIcon,
-  Select,
-  Badge,
-  Loader,
-} from "@mantine/core";
+import { TextInput, Button, Paper, Title, Group, Avatar, Stack, Container, FileInput, Text, Divider, Box, ActionIcon, Select, Badge, Loader, } from "@mantine/core";
 import { IconUpload, IconCamera, IconLock, IconLockOpen } from "@tabler/icons-react";
 import { useAuth } from "../context/AuthContext";
 import { ThemeContext } from "../context/ThemeContext";
@@ -52,13 +35,13 @@ function ProfilePage() {
 
   const handleImageChange = (file) => {
     if (file) {
-      
+      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         showError("Image size should be less than 5MB");
         return;
       }
       
-      
+      // Check file type
       if (!file.type.startsWith('image/')) {
         showError("Please select an image file");
         return;
@@ -128,7 +111,7 @@ function ProfilePage() {
       setPictureLoading(true);
       console.log("Starting image upload...");
 
-      
+      // Convert to base64
       const reader = new FileReader();
       
       const imageUrl = await new Promise((resolve, reject) => {
@@ -273,8 +256,6 @@ function ProfilePage() {
               </Button>
             </Group>
           </Group>
-
-          {/* Profile Picture Section */}
           <Stack align="center" mb="xl">
             <Box pos="relative">
               <Avatar
@@ -340,7 +321,6 @@ function ProfilePage() {
             }}
           />
 
-          {/* Profile Form */}
           <Stack gap="md">
             <TextInput
               label="Full Name"

@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export const AuthContext = createContext();
@@ -37,10 +38,18 @@ export function AuthProvider({ children }) {
       setIsLoggedIn(true);
     } catch (error) {
       console.error("Error fetching user profile:", error);
-      localStorage.removeItem("authToken");
-      setUser(null);
-      setIsLoggedIn(false);
-      setToken(null);
+      
+      if (error.response?.data?.isBanned || error.response?.data?.isSuspended) {
+        localStorage.removeItem("authToken");
+        setUser(null);
+        setIsLoggedIn(false);
+        setToken(null);
+      } else {
+        localStorage.removeItem("authToken");
+        setUser(null);
+        setIsLoggedIn(false);
+        setToken(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -64,7 +73,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider
       value={{
         user,
-        setUser, 
+        setUser,
         isLoggedIn,
         loading,
         token,

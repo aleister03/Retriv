@@ -33,9 +33,10 @@ export default function AuthSuccess() {
 
     hasProcessed.current = true;
 
-    
+    // Save token immediately so other parts of the app can use it
     localStorage.setItem("authToken", token);
 
+    // Fetch full user profile from backend
     const fetchProfile = async () => {
       try {
         const res = await fetch(`${API_BASE}/profile`, {
@@ -65,6 +66,7 @@ export default function AuthSuccess() {
 
         console.log("AuthSuccess - logging in with userData:", userData);
 
+        // Use your existing login helper to update context
         login(token, userData);
 
         if (isNewUser) {

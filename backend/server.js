@@ -1,24 +1,31 @@
-// backend server for our app
-const express = require('express');
-const dotenv = require('dotenv');
+const express = require("express");
+const cors = require("cors");
+const passport = require("passport");
+const connectDB = require("./config/db");
+const authRoutes = require("./routes/authRoutes");
+require("dotenv").config();
+require("./config/passport");
 
-dotenv.config() //loads environment variables
+const app = express();
 
-const connectDB = require('./config/db');
+// Connect Database
 connectDB();
-const app = express(); //app initialization
 
-//middleware
-app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+// Middleware
+app.use(cors());
 
-//routes and verify API running
-app.get('/', (req, res) => {
-    res.json({message: 'Retriv API is running'});
+
+app.use(express.json({ limit: '10mb' }));  
+app.use(express.urlencoded({ limit: '10mb', extended: true })); 
+
+app.use(passport.initialize());
+
+
+app.use("/api/auth", authRoutes);
+
+app.get("/", (req, res) => {
+  res.send("API is running...");
 });
 
-const PORT = process.env.PORT || 5000; //server configuration, using port(environment) or 5000(default)
-
-app.listen(PORT, () => { //server initialization
-    console.log(`Server is running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

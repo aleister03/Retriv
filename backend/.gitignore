@@ -5,19 +5,20 @@ node_modules/
 .env
 .env.local
 .env.production
-.env.test
 
 # Logs
-logs/
+logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # OS files
 .DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
 .idea/
-
-# Build
-dist/
+*.swp
+*.swo

@@ -4,12 +4,18 @@ import { COLORS } from '../utils/constants';
 export const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('light');
+  // Initialize theme from localStorage or default to 'light'
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme || 'light';
+  });
   
   const toggleTheme = () => {
     setTheme(prevTheme => {
       const newTheme = prevTheme === 'light' ? 'dark' : 'light';
       console.log('Theme switched to:', newTheme);
+      // Save to localStorage
+      localStorage.setItem('theme', newTheme);
       return newTheme;
     });
   };
@@ -28,7 +34,7 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--text-secondary', colors.textSecondary);
     root.style.setProperty('--borders', colors.borders);
     
-    console.log('Applied theme:', theme, 'colors:', colors); // Debug log
+    console.log('Applied theme:', theme, 'colors:', colors);
   }, [theme, colors]);
 
   return (

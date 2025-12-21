@@ -21,11 +21,23 @@ export default function AdminSidebar({ activeTab, onTabChange }) {
     navigate('/profile');
   };
 
+  const handleLostFound = () => {
+    navigate('/lost-found');
+  };
+
+  const handleMarketplace = () => {
+    showPageNotAvailable('Marketplace');
+  };
+
+  const handleExchange = () => {
+    showPageNotAvailable('Exchange');
+  };
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: IconDashboard, action: () => onTabChange('users') },
-    { id: 'lost-found', label: 'Lost & Found', icon: IconFileText, action: () => showPageNotAvailable('Lost & Found') },
-    { id: 'marketplace', label: 'Marketplace', icon: IconShoppingCart, action: () => showPageNotAvailable('Marketplace') },
-    { id: 'exchange', label: 'Exchange', icon: IconArrowsExchange, action: () => showPageNotAvailable('Exchange') },
+    { id: 'lost-found', label: 'Lost & Found', icon: IconFileText, action: handleLostFound },
+    { id: 'marketplace', label: 'Marketplace', icon: IconShoppingCart, action: handleMarketplace },
+    { id: 'exchange', label: 'Exchange', icon: IconArrowsExchange, action: handleExchange },
     { id: 'profile', label: 'Profile', icon: IconUser, action: handleProfile },
   ];
 

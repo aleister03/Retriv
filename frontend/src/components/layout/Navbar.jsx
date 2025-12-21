@@ -5,7 +5,7 @@ import {
 } from '@mantine/core';
 import {
   IconMoon, IconSun, IconUser, IconBell,
-  IconSettings, IconLogout
+  IconSettings, IconLogout, IconShield
 } from '@tabler/icons-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
@@ -16,13 +16,21 @@ export default function Navbar() {
   const { theme, toggleTheme, colors } = useContext(ThemeContext);
   const { user, isLoggedIn, loading, logout } = useContext(AuthContext);
   const [loginModalOpened, setLoginModalOpened] = useState(false);
-  const navigate = useNavigate(); // ADD THIS LINE
+  const navigate = useNavigate();
 
   const handleNotAvailable = (page) => showPageNotAvailable(page);
 
   const handleLogout = () => {
     logout();
     showSuccess('Logged Out', 'You have been successfully logged out');
+  };
+
+  const handleNavClick = (label) => {
+    if (label === 'Lost & Found') {
+      navigate('/lost-found');
+    } else {
+      handleNotAvailable(label);
+    }
   };
 
   const menuItemStyle = {
@@ -81,6 +89,7 @@ export default function Navbar() {
             </Text>
           </Box>
         </Group>
+        
         <Group gap="xl">
           <Link
             to="/"
@@ -104,7 +113,7 @@ export default function Navbar() {
               role="button"
               tabIndex={0}
               aria-label={label}
-              onClick={() => handleNotAvailable(label)}
+              onClick={() => handleNavClick(label)}
               style={{
                 textDecoration: 'none',
                 color: colors.textPrimary,
@@ -122,6 +131,7 @@ export default function Navbar() {
             </Text>
           ))}
         </Group>
+        
         <Group gap="md">
           <Box
             onClick={toggleTheme}
@@ -199,13 +209,26 @@ export default function Navbar() {
               >
                 <Menu.Item
                   leftSection={<IconUser size={16} style={{ color: colors.textPrimary }} />}
-                  onClick={() => navigate('/profile')}  // CHANGED THIS LINE
+                  onClick={() => navigate('/profile')}
                   style={menuItemStyle}
                   onMouseEnter={e => e.currentTarget.style.background = menuItemHoverStyle}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   Profile
                 </Menu.Item>
+
+                {user?.isAdmin && (
+                  <Menu.Item
+                    leftSection={<IconShield size={16} style={{ color: colors.textPrimary }} />}
+                    onClick={() => navigate('/admin')}
+                    style={menuItemStyle}
+                    onMouseEnter={e => e.currentTarget.style.background = menuItemHoverStyle}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    Admin Dashboard
+                  </Menu.Item>
+                )}
+
                 <Menu.Item
                   leftSection={<IconBell size={16} style={{ color: colors.textPrimary }} />}
                   onClick={() => handleNotAvailable('Notifications')}

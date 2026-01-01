@@ -4,8 +4,7 @@ import { Loader, Center, Text, Box } from "@mantine/core";
 import { AuthContext } from "../context/AuthContext";
 import { showSuccess, showInfo, showError } from "../utils/notifications";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/auth";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export default function AuthSuccess() {
   const [searchParams] = useSearchParams();
@@ -18,11 +17,6 @@ export default function AuthSuccess() {
 
     const token = searchParams.get("token");
     const isNewUser = searchParams.get("isNewUser") === "true";
-
-    console.log("AuthSuccess - Received params:", {
-      token: token ? token.substring(0, 20) + "..." : null,
-      isNewUser,
-    });
 
     if (!token) {
       console.error("Missing token in auth success URL");
@@ -39,14 +33,13 @@ export default function AuthSuccess() {
     // Fetch full user profile from backend
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`${API_BASE}/profile`, {
+        const res = await fetch(`${API_BASE}/auth/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         const data = await res.json();
-        console.log("AuthSuccess - profile response:", data);
 
         if (!res.ok || !data.success || !data.user) {
           throw new Error(data.message || "Failed to load profile");
@@ -62,9 +55,8 @@ export default function AuthSuccess() {
           isProfileLocked: data.user.isProfileLocked,
           reputationScore: data.user.reputationScore,
           isVerified: data.user.isVerified,
+          isAdmin: data.user.isAdmin || false,
         };
-
-        console.log("AuthSuccess - logging in with userData:", userData);
 
         // Use your existing login helper to update context
         login(token, userData);
@@ -78,12 +70,18 @@ export default function AuthSuccess() {
           showSuccess("Welcome Back!", `Good to see you again, ${userData.name}!`);
         }
 
+        // Navigate based on user role
         setTimeout(() => {
-          navigate("/", { replace: true });
+          if (userData.isAdmin) {
+            navigate("/admin", { replace: true });
+          } else {
+            navigate("/", { replace: true });
+          }
         }, 500);
       } catch (err) {
         console.error("AuthSuccess - profile fetch error:", err);
         showError("Login failed while loading your profile.");
+        localStorage.removeItem("authToken");
         navigate("/", { replace: true });
       }
     };
@@ -92,19 +90,22 @@ export default function AuthSuccess() {
   }, [searchParams, navigate, login]);
 
   return (
-    <Center
+    <Box
       style={{
-        height: "100vh",
-        backgroundColor: "var(--bg-color)",
-        transition: "background-color 0.3s ease",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      <Box style={{ textAlign: "center" }}>
-        <Loader size="lg" color="var(--primary-accent)" />
-        <Text mt="lg" size="lg" style={{ color: "var(--text-primary)" }}>
-          Completing login...
-        </Text>
-      </Box>
-    </Center>
+      <Center>
+        <Box style={{ textAlign: "center" }}>
+          <Loader size="xl" />
+          <Text mt="md" size="lg">
+            Completing your login...
+          </Text>
+        </Box>
+      </Center>
+    </Box>
   );
 }

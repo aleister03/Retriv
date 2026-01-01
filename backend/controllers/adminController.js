@@ -1,17 +1,13 @@
 const User = require('../models/User');
-
+const Post = require('../models/Post');
+const VerificationRequest = require('../models/VerificationRequest');
 // Get admin dashboard stats
 exports.getDashboardStats = async (req, res) => {
   try {
-    // Total users count
-    const totalUsers = await User.countDocuments();
-    
-    // Total posts
-    const totalPosts = 0;
-    
-    // Pending requests
-    const pendingRequests = 0;
-    
+    const totalUsers = await User.countDocuments(); // Total users count
+    const totalPosts = await Post.countDocuments({ isDeleted: false });// Total posts 
+    const pendingRequests = await VerificationRequest.countDocuments({ status: 'pending' });// Pending VERIFICATION REQUESTS 
+
     res.json({
       success: true,
       stats: {
@@ -22,9 +18,9 @@ exports.getDashboardStats = async (req, res) => {
     });
   } catch (error) {
     console.error('Dashboard stats error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Failed to fetch dashboard statistics' 
+      message: 'Failed to fetch dashboard statistics',
     });
   }
 };
@@ -491,6 +487,206 @@ exports.demoteFromAdmin = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Failed to demote user from admin' 
+    });
+  }
+};
+
+// Get all posts for admin dashboard
+exports.getAllPosts = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', type = 'all' } = req.query;
+
+    let query = { isDeleted: false };
+
+    // Search by title
+    if (search) {
+      query.title = { $regex: search, $options: 'i' };
+    }
+
+    // Filter by type
+    if (type !== 'all') {
+      query.type = type;
+    }
+
+    const posts = await Post.find(query)
+      .populate('author', 'name email profilePicture')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const totalPosts = await Post.countDocuments(query);
+
+    res.json({
+      success: true,
+      posts,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalPosts / limit),
+        totalPosts,
+        postsPerPage: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    console.error('Get all posts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch posts',
+    });
+  }
+};
+
+// Delete post by admin
+exports.deletePostByAdmin = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId);
+
+    if (!post || post.isDeleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Post not found',
+      });
+    }
+
+    // Soft delete
+    post.isDeleted = true;
+    await post.save();
+
+    res.json({
+      success: true,
+      message: 'Post deleted successfully by admin',
+    });
+  } catch (error) {
+    console.error('Admin delete post error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete post',
+    });
+  }
+};
+
+// Get all pending post reports
+exports.getPostReports = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status = 'pending' } = req.query;
+
+    // Build query to find posts with reports
+    const query = {
+      isDeleted: false,
+      'reports.0': { $exists: true }, // Posts that have at least one report
+    };
+
+    // Filter by report status if specified
+    let posts = await Post.find(query)
+      .populate('author', 'name email profilePicture')
+      .populate('reports.reportedBy', 'name email')
+      .sort({ 'reports.reportedAt': -1 })
+      .lean();
+
+    // Filter reports by status
+    posts = posts.map(post => ({
+      ...post,
+      reports: post.reports.filter(report => 
+        status === 'all' ? true : report.status === status
+      ),
+    })).filter(post => post.reports.length > 0); // Only keep posts with matching reports
+
+    // Pagination
+    const totalReports = posts.reduce((sum, post) => sum + post.reports.length, 0);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    // Flatten reports for pagination
+    const allReports = [];
+    posts.forEach(post => {
+      post.reports.forEach(report => {
+        allReports.push({
+          _id: report._id,
+          post: {
+            _id: post._id,
+            title: post.title,
+            description: post.description,
+            type: post.type,
+            images: post.images,
+            author: post.author,
+          },
+          reportedBy: report.reportedBy,
+          reason: report.reason,
+          reportedAt: report.reportedAt,
+          status: report.status,
+        });
+      });
+    });
+
+    // Sort by most recent
+    allReports.sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
+
+    const paginatedReports = allReports.slice(startIndex, endIndex);
+
+    res.json({
+      success: true,
+      reports: paginatedReports,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalReports / limit),
+        totalReports,
+        reportsPerPage: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    console.error('Get post reports error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch post reports',
+    });
+  }
+};
+
+// Update report status 
+exports.updateReportStatus = async (req, res) => {
+  try {
+    const { postId, reportId } = req.params;
+    const { status } = req.body; 
+
+    if (!['reviewed', 'dismissed'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be "reviewed" or "dismissed"',
+      });
+    }
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: 'Post not found',
+      });
+    }
+
+    const report = post.reports.id(reportId);
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found',
+      });
+    }
+
+    report.status = status;
+    await post.save();
+
+    res.json({
+      success: true,
+      message: `Report marked as ${status}`,
+      report,
+    });
+  } catch (error) {
+    console.error('Update report status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update report status',
     });
   }
 };

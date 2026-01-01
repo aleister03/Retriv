@@ -1,15 +1,20 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Stack, Button, Divider, Text, ActionIcon, Group } from '@mantine/core';
-import { IconFileText, IconShoppingCart, IconArrowsExchange, IconUser, IconLogout, IconMoon, IconSun, IconDashboard,} from '@tabler/icons-react';
+import { Box, Stack, Button, Divider, Text, ActionIcon, Group, Badge, ScrollArea } from '@mantine/core';
+import { IconFileText, IconShoppingCart, IconArrowsExchange, IconUser, IconLogout, IconMoon, IconSun, IconDashboard, IconBell } from '@tabler/icons-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { showSuccess, showPageNotAvailable } from '../../utils/notifications';
+import NotificationPanel from '../notifications/NotificationPanel';
 
 export default function AdminSidebar({ activeTab, onTabChange }) {
   const { theme, toggleTheme, colors } = useContext(ThemeContext);
   const { logout, user } = useAuth();
+  const { unreadCounts } = useSocket();
   const navigate = useNavigate();
+  
+  const [notificationPanelOpened, setNotificationPanelOpened] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -17,164 +22,218 @@ export default function AdminSidebar({ activeTab, onTabChange }) {
     navigate('/');
   };
 
-  const handleProfile = () => {
-    navigate('/profile');
-  };
-
-  const handleLostFound = () => {
-    navigate('/lost-found');
-  };
-
-  const handleMarketplace = () => {
-    showPageNotAvailable('Marketplace');
-  };
-
-  const handleExchange = () => {
-    showPageNotAvailable('Exchange');
-  };
-
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: IconDashboard, action: () => onTabChange('users') },
-    { id: 'lost-found', label: 'Lost & Found', icon: IconFileText, action: handleLostFound },
-    { id: 'marketplace', label: 'Marketplace', icon: IconShoppingCart, action: handleMarketplace },
-    { id: 'exchange', label: 'Exchange', icon: IconArrowsExchange, action: handleExchange },
-    { id: 'profile', label: 'Profile', icon: IconUser, action: handleProfile },
+    { id: 'lost-found', label: 'Lost & Found', icon: IconFileText, action: () => navigate('/lost-found') },
+    { id: 'marketplace', label: 'Marketplace', icon: IconShoppingCart, action: () => navigate('/marketplace') },
+    { id: 'exchange', label: 'Exchange', icon: IconArrowsExchange, action: () => navigate('/exchange') },
+    { id: 'profile', label: 'Profile', icon: IconUser, action: () => navigate('/profile') },
   ];
 
   return (
-    <Box
-      style={{
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        height: '100vh',
-        width: '280px',
-        background: colors.surface,
-        borderRight: `1px solid ${colors.borders}`,
-        padding: '1.5rem',
-        display: 'flex',
-        flexDirection: 'column',
-        zIndex: 100,
-      }}
-    >
-      <Box style={{ marginBottom: '2rem' }}>
-        <Group spacing="xs" style={{ marginBottom: '0.5rem' }}>
-          <Box
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '8px',
-              background: `linear-gradient(135deg, ${colors.primaryAccent}, ${colors.secondaryAccent})`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: '1.25rem',
-            }}
-          >
-            R
-          </Box>
-          <Box>
-            <Text
-              weight={700}
-              style={{
-                fontSize: '1.5rem',
-                color: colors.textPrimary,
-                lineHeight: 1.2,
-              }}
-            >
-              Retriv
-            </Text>
-            <Text size="xs" style={{ color: colors.textSecondary }}>
-              Admin Panel
-            </Text>
-          </Box>
-        </Group>
-      </Box>
-
+    <>
       <Box
-        style={{
-          background: colors.elevatedSurface,
-          padding: '1rem',
-          borderRadius: '8px',
-          marginBottom: '1.5rem',
-        }}
+        style={{ width: '280px', height: '100vh', background: colors.surface, borderRight: `1px solid ${colors.borders}`, position: 'fixed', left: 0, top: 0, display: 'flex', flexDirection: 'column', }}
       >
-        <Text size="xs" weight={500} style={{ color: colors.textSecondary, marginBottom: '0.25rem' }}>
-          Logged in as
-        </Text>
-        <Text weight={600} style={{ color: colors.textPrimary, fontSize: '0.95rem' }}>
-          {user?.name || 'Admin'}
-        </Text>
-        <Text size="xs" style={{ color: colors.textSecondary }}>
-          {user?.email || ''}
-        </Text>
-      </Box>
-
-      <Stack spacing="xs" style={{ flex: 1 }}>
-        {menuItems.map((item) => (
-          <Button
-            key={item.id}
-            variant="subtle"
-            leftIcon={<item.icon size={20} />}
-            onClick={item.action}
-            styles={{
-              root: {
-                justifyContent: 'flex-start',
-                height: '44px',
-                padding: '0 1rem',
-                color: colors.textPrimary,
-                fontWeight: 500,
-                borderRadius: '8px',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  background: colors.elevatedSurface,
-                },
-              },
-              label: {
-                fontSize: '0.95rem',
-              },
-            }}
-          >
-            {item.label}
-          </Button>
-        ))}
-      </Stack>
-
-      <Divider style={{ marginTop: 'auto', marginBottom: '1rem', borderColor: colors.borders }} />
-
-      <Group position="apart" style={{ marginBottom: '1rem' }}>
-        <Text size="sm" weight={500} style={{ color: colors.textPrimary }}>
-          Theme
-        </Text>
-        <ActionIcon
-          onClick={toggleTheme}
-          size="lg"
-          variant="light"
-          style={{
-            background: colors.elevatedSurface,
-            color: colors.textPrimary,
+        <ScrollArea
+          style={{ 
+            flex: 1,
+            height: '100%',
+          }}
+          scrollbarSize={8}
+          styles={{
+            thumb: {
+              backgroundColor: colors.borders,
+            },
           }}
         >
-          {theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
-        </ActionIcon>
-      </Group>
-      <Button
-        leftIcon={<IconLogout size={20} />}
-        onClick={handleLogout}
-        color="red"
-        variant="light"
-        fullWidth
-        styles={{
-          root: {
-            height: '44px',
-            fontWeight: 500,
-          },
-        }}
-      >
-        Logout
-      </Button>
-    </Box>
+          <Box style={{ padding: '1.5rem 1rem' }}>
+            {/* Logo */}
+            <Group mb="xl" style={{ gap: '0.75rem' }}>
+              <Box
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  background: `linear-gradient(135deg, ${colors.primaryAccent}, ${colors.secondaryAccent})`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
+                  color: '#fff',
+                }}
+              >
+                R
+              </Box>
+              <Box>
+                <Text
+                  size="xl"
+                  style={{
+                    fontWeight: 700,
+                    color: colors.textPrimary,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Retriv
+                </Text>
+                <Text
+                  size="xs"
+                  style={{
+                    color: colors.textSecondary,
+                    fontWeight: 500,
+                  }}
+                >
+                  Admin Panel
+                </Text>
+              </Box>
+            </Group>
+
+            <Divider mb="md" color={colors.borders} />
+
+            {/* User Info */}
+            <Box
+              mb="lg"
+              p="sm"
+              style={{
+                background: colors.elevatedSurface,
+                borderRadius: '8px',
+                border: `1px solid ${colors.borders}`,
+              }}
+            >
+              <Text size="xs" c={colors.textSecondary} mb={4}>
+                Logged in as
+              </Text>
+              <Text
+                size="sm"
+                style={{
+                  fontWeight: 600,
+                  color: colors.textPrimary,
+                  marginBottom: '2px',
+                }}
+              >
+                {user?.name || 'Admin'}
+              </Text>
+              <Text size="xs" c={colors.textSecondary}>
+                {user?.email || ''}
+              </Text>
+            </Box>
+
+            {/* Menu Items */}
+            <Stack style={{ gap: '0.5rem' }} mb="lg">
+              {menuItems.map((item) => (
+                <Button
+                  key={item.id}
+                  leftSection={<item.icon size={20} />}
+                  variant="subtle"
+                  onClick={item.action}
+                  styles={{
+                    root: {
+                      justifyContent: 'flex-start',
+                      height: '44px',
+                      padding: '0 1rem',
+                      color: colors.textPrimary,
+                      fontWeight: 500,
+                      borderRadius: '8px',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        background: colors.elevatedSurface,
+                      },
+                    },
+                    label: {
+                      fontSize: '0.95rem',
+                    },
+                  }}
+                >
+                  {item.label}
+                </Button>
+              ))}
+
+              {/* Notifications Button */}
+              <Button
+                leftSection={<IconBell size={20} />}
+                variant="subtle"
+                onClick={() => setNotificationPanelOpened(true)}
+                styles={{
+                  root: {
+                    justifyContent: 'flex-start',
+                    height: '44px',
+                    padding: '0 1rem',
+                    color: colors.textPrimary,
+                    fontWeight: 500,
+                    borderRadius: '8px',
+                    transition: 'all 0.2s',
+                    position: 'relative',
+                    '&:hover': {
+                      background: colors.elevatedSurface,
+                    },
+                  },
+                  label: {
+                    fontSize: '0.95rem',
+                  },
+                }}
+              >
+                Notifications
+                {(unreadCounts.notifications > 0 || unreadCounts.messages > 0) && (
+                  <Badge
+                    size="sm"
+                    variant="filled"
+                    color="red"
+                    style={{
+                      position: 'absolute',
+                      right: '1rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                    }}
+                  >
+                    {unreadCounts.notifications + unreadCounts.messages}
+                  </Badge>
+                )}
+              </Button>
+            </Stack>
+
+            <Divider my="md" color={colors.borders} />
+
+            {/* Theme Toggle */}
+            <Group mb="md" style={{ justifyContent: 'space-between' }}>
+              <Text size="sm" c={colors.textSecondary}>
+                Theme
+              </Text>
+              <ActionIcon
+                onClick={toggleTheme}
+                variant="subtle"
+                size="lg"
+                style={{ color: colors.textPrimary }}
+              >
+                {theme === 'light' ? <IconMoon size={20} /> : <IconSun size={20} />}
+              </ActionIcon>
+            </Group>
+
+            {/* Logout */}
+            <Button
+              leftSection={<IconLogout size={20} />}
+              onClick={handleLogout}
+              color="red"
+              variant="light"
+              fullWidth
+              styles={{
+                root: {
+                  height: '44px',
+                  fontWeight: 500,
+                },
+              }}
+            >
+              Logout
+            </Button>
+          </Box>
+        </ScrollArea>
+      </Box>
+
+      {/* Notification Panel */}
+      <NotificationPanel
+        opened={notificationPanelOpened}
+        onClose={() => setNotificationPanelOpened(false)}
+      />
+    </>
   );
 }

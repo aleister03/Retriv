@@ -1,58 +1,54 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { ThemeContext } from '../../context/ThemeContext';
+import TermsModal from './TermsModal';
 
 export default function Footer() {
   const { colors } = useContext(ThemeContext);
+  const [termsOpened, setTermsOpened] = useState(false);
 
   return (
-    <footer style={{
-      background: colors.surface,
-      borderTop: `1px solid ${colors.borders}`,
-      padding: '2.5rem 2rem 1.5rem 2rem',
-      textAlign: 'center',
-      color: colors.textSecondary,
-      fontSize: '1rem',
-    }}>
-      <div style={{ marginBottom: '0.8rem' }}>
-        <a
-          href="/terms"
+    <>
+      <footer
+        style={{
+          padding: '2rem 1rem',
+          background: colors.surface,
+          borderTop: `1px solid ${colors.borders}`,
+          marginTop: 'auto',
+        }}
+      >
+        <div
           style={{
-            textDecoration: 'none',
-            color: colors.textSecondary,
-            fontWeight: 500,
-            borderRadius: '6px',
-            padding: '0.25rem 0.6rem',
-            transition: 'background 0.18s',
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = colors.elevatedSurface)}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
-          Terms & Conditions
-        </a>
-        {' '}·{' '}
-        <a
-          href="/privacy"
-          style={{
-            textDecoration: 'none',
-            color: colors.textSecondary,
-            fontWeight: 500,
-            borderRadius: '6px',
-            padding: '0.25rem 0.6rem',
-            transition: 'background 0.18s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = colors.elevatedSurface)}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-        >
-          Privacy Policy
-        </a>
-      </div>
-      <div style={{
-        fontSize: '0.93rem',
-        color: colors.textSecondary,
-        opacity: 0.85,
-      }}>
-        Designed by Retriv Team &middot; {new Date().getFullYear()}
-      </div>
-    </footer>
+          <p style={{ margin: 0, color: colors.textSecondary, fontSize: '0.9rem' }}>
+            © {new Date().getFullYear()} Designed by Retriv Team. All rights reserved.
+          </p>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            <a
+              onClick={() => setTermsOpened(true)}
+              style={{
+                color: colors.textSecondary,
+                textDecoration: 'none',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.target.style.color = colors.primaryAccent)}
+              onMouseLeave={(e) => (e.target.style.color = colors.textSecondary)}
+            >
+              Terms & Conditions
+            </a>
+          </div>
+        </div>
+      </footer>
+      
+      <TermsModal opened={termsOpened} onClose={() => setTermsOpened(false)} />
+    </>
   );
 }

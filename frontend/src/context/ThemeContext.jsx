@@ -13,7 +13,6 @@ export function ThemeProvider({ children }) {
   const toggleTheme = () => {
     setTheme(prevTheme => {
       const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      console.log('Theme switched to:', newTheme);
       // Save to localStorage
       localStorage.setItem('theme', newTheme);
       return newTheme;
@@ -33,8 +32,6 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--text-primary', colors.textPrimary);
     root.style.setProperty('--text-secondary', colors.textSecondary);
     root.style.setProperty('--borders', colors.borders);
-    
-    console.log('Applied theme:', theme, 'colors:', colors);
   }, [theme, colors]);
 
   return (

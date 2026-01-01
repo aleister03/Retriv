@@ -22,14 +22,15 @@ passport.use(
             profilePicture: profile.photos[0]?.value || '',
             authProvider: 'google',
             isVerified: true,
+            reputationScore: 50,
           });
           isNewUser = true;
         }
 
         user.isNewUser = isNewUser;
-
         return done(null, user);
       } catch (error) {
+        console.error('Google OAuth error:', error);
         return done(error, null);
       }
     }

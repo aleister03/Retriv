@@ -1,21 +1,20 @@
 import { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  Button, Group, Menu, Avatar, Text, Box, Divider
-} from '@mantine/core';
-import {
-  IconMoon, IconSun, IconUser, IconBell,
-  IconSettings, IconLogout, IconShield
-} from '@tabler/icons-react';
+import { Button, Group, Menu, Avatar, Text, Box, Divider, Badge, ActionIcon } from '@mantine/core';
+import { IconMoon, IconSun, IconUser, IconBell, IconSettings, IconLogout } from '@tabler/icons-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { showPageNotAvailable, showSuccess } from '../../utils/notifications';
 import LoginModal from '../auth/LoginModal';
+import NotificationPanel from '../notifications/NotificationPanel';
 
 export default function Navbar() {
   const { theme, toggleTheme, colors } = useContext(ThemeContext);
   const { user, isLoggedIn, loading, logout } = useContext(AuthContext);
+  const { unreadCounts } = useSocket();
   const [loginModalOpened, setLoginModalOpened] = useState(false);
+  const [notificationPanelOpened, setNotificationPanelOpened] = useState(false);
   const navigate = useNavigate();
 
   const handleNotAvailable = (page) => showPageNotAvailable(page);
@@ -23,14 +22,6 @@ export default function Navbar() {
   const handleLogout = () => {
     logout();
     showSuccess('Logged Out', 'You have been successfully logged out');
-  };
-
-  const handleNavClick = (label) => {
-    if (label === 'Lost & Found') {
-      navigate('/lost-found');
-    } else {
-      handleNotAvailable(label);
-    }
   };
 
   const menuItemStyle = {
@@ -44,239 +35,286 @@ export default function Navbar() {
 
   return (
     <>
-      <nav
+      <Box
         style={{
-          padding: '1.25rem 2rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
           background: colors.surface,
           borderBottom: `1px solid ${colors.borders}`,
-          boxShadow: theme === 'light'
-            ? '0 4px 12px rgba(80,150,220,0.03)'
-            : '0 2px 8px rgba(0,0,0,0.10)',
-          transition: 'background 0.3s, box-shadow 0.3s',
+          padding: '0.8rem 2rem',
           position: 'sticky',
           top: 0,
-          zIndex: 10,
+          zIndex: 100,
         }}
-        aria-label="Main navigation"
       >
-        <Group gap={0}>
-          <Box
-            style={{
-              background: colors.primaryAccent,
-              borderRadius: '12px',
-              padding: '10px 14px',
-              color: '#FFF',
-              fontWeight: 700,
-              fontSize: '1.35rem',
-              letterSpacing: '-1px',
-              display: 'flex',
-              alignItems: 'center',
-              marginRight: '0.7rem',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            }}
-          >
-            R
-          </Box>
-          <Box>
-            <Text fw={700} style={{ color: colors.textPrimary, fontSize: '1.33rem' }}>
-              Retriv
-            </Text>
-            <Text fw={500} style={{ color: colors.textSecondary, fontSize: '0.87rem', letterSpacing: '0.2px' }}>
-              Find · Trade · Connect
-            </Text>
-          </Box>
-        </Group>
-        
-        <Group gap="xl">
+        <Group justify="space-between">
+          {/* Logo */}
           <Link
             to="/"
-            aria-label="Go to homepage"
             style={{
               textDecoration: 'none',
-              color: colors.textPrimary,
-              fontWeight: 500,
-              fontSize: '1rem',
-              cursor: 'pointer',
-              padding: '0.4rem 0.6rem',
-              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
             }}
           >
-            Home
+            <Box
+              style={{
+                background: colors.primaryAccent,
+                color: '#fff',
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '1.2rem',
+              }}
+            >
+              R
+            </Box>
+            <Box>
+              <Text
+                size="lg"
+                fw={700}
+                style={{ color: colors.textPrimary, lineHeight: 1.2 }}
+              >
+                Retriv
+              </Text>
+              <Text
+                size="xs"
+                style={{ color: colors.textSecondary, lineHeight: 1 }}
+              >
+                Find · Trade · Connect
+              </Text>
+            </Box>
           </Link>
-          {["Lost & Found", "Marketplace", "Exchange", "Help"].map((label) => (
-            <Text
-              key={label}
-              component="span"
-              role="button"
-              tabIndex={0}
-              aria-label={label}
-              onClick={() => handleNavClick(label)}
+
+          {/* Nav Links */}
+          <Group gap="md">
+            <Link
+              to="/"
               style={{
                 textDecoration: 'none',
                 color: colors.textPrimary,
                 fontWeight: 500,
                 fontSize: '1rem',
-                cursor: 'pointer',
                 padding: '0.4rem 0.6rem',
                 borderRadius: '6px',
                 transition: 'background 0.18s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = colors.elevatedSurface}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = colors.elevatedSurface)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'transparent')
+              }
             >
-              {label}
-            </Text>
-          ))}
-        </Group>
-        
-        <Group gap="md">
-          <Box
-            onClick={toggleTheme}
-            style={{
-              width: '64px',
-              height: '32px',
-              borderRadius: '16px',
-              background: theme === 'light'
-                ? 'linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%)'
-                : 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)',
-              border: `1px solid ${colors.borders}`,
-              position: 'relative',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '3px',
-            }}
-          >
-            <Box
+              Home
+            </Link>
+            <Link
+              to="/lost-found"
               style={{
-                width: '26px',
-                height: '26px',
-                borderRadius: '50%',
-                background: theme === 'light' ? '#fff' : '#3a3a3a',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                position: 'absolute',
-                left: theme === 'light' ? '3px' : '35px',
-                transition: 'left 0.3s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: colors.textSecondary,
+                textDecoration: 'none',
+                color: colors.textPrimary,
+                fontWeight: 500,
+                fontSize: '1rem',
+                padding: '0.4rem 0.6rem',
+                borderRadius: '6px',
+                transition: 'background 0.18s',
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = colors.elevatedSurface)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'transparent')
+              }
             >
-              {theme === 'light' ? <IconSun size={16} /> : <IconMoon size={16} />}
-            </Box>
-          </Box>
+              Lost & Found
+            </Link>
+            <Link
+              to="/marketplace"
+              style={{
+                textDecoration: 'none',
+                color: colors.textPrimary,
+                fontWeight: 500,
+                fontSize: '1rem',
+                padding: '0.4rem 0.6rem',
+                borderRadius: '6px',
+                transition: 'background 0.18s',
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = colors.elevatedSurface)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'transparent')
+              }
+            >
+              Marketplace
+            </Link>
+            <Link
+              to="/exchange"
+              style={{
+                textDecoration: 'none',
+                color: colors.textPrimary,
+                fontWeight: 500,
+                fontSize: '1rem',
+                padding: '0.4rem 0.6rem',
+                borderRadius: '6px',
+                transition: 'background 0.18s',
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = colors.elevatedSurface)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'transparent')
+              }
+            >
+              Exchange
+            </Link>
+            <Link
+              to="/help"
+              style={{
+                textDecoration: 'none',
+                color: colors.textPrimary,
+                fontWeight: 500,
+                fontSize: '1rem',
+                padding: '0.4rem 0.6rem',
+                borderRadius: '6px',
+                transition: 'background 0.18s',
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = colors.elevatedSurface)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'transparent')
+              }
+            >
+              Help
+            </Link>
+          </Group>
 
-          {loading ? (
-            <Box style={{ width: '120px', height: '36px' }} />
-          ) : isLoggedIn ? (
-            <Menu shadow="md" width={200} position="bottom-end" offset={10}>
-              <Menu.Target>
-                <div
-                  style={{
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                  }}
+          {/* Right Side */}
+          <Group gap="sm">
+            {/* Theme Toggle */}
+            <ActionIcon
+              onClick={toggleTheme}
+              variant="subtle"
+              size="lg"
+              style={{ color: colors.textPrimary }}
+            >
+              {theme === 'light' ? <IconMoon size={20} /> : <IconSun size={20} />}
+            </ActionIcon>
+
+            {loading ? (
+              <Text>Loading...</Text>
+            ) : isLoggedIn ? (
+              <>
+                {/* Notification Bell */}
+                <ActionIcon
+                  onClick={() => setNotificationPanelOpened(true)}
+                  variant="subtle"
+                  size="lg"
+                  style={{ position: 'relative', color: colors.textPrimary }}
                 >
-                  <Avatar
-                    src={user?.profilePicture || user?.avatar || null}
-                    alt={user?.name || 'User'}
-                    size="lg"
-                    radius="xl"
+                  <IconBell size={22} />
+                  {(unreadCounts.notifications > 0 || unreadCounts.messages > 0) && (
+                    <Badge
+                      size="xs"
+                      circle
+                      style={{
+                        position: 'absolute',
+                        top: -2,
+                        right: -2,
+                        background: colors.error,
+                        color: '#fff',
+                        border: `2px solid ${colors.surface}`,
+                      }}
+                    >
+                      {unreadCounts.notifications + unreadCounts.messages}
+                    </Badge>
+                  )}
+                </ActionIcon>
+
+                {/* User Menu */}
+                <Menu shadow="md" width={200}>
+                  <Menu.Target>
+                    <ActionIcon
+                      variant="subtle"
+                      size="lg"
+                      style={{
+                        borderRadius: '50%',
+                      }}
+                    >
+                      <Avatar
+                        src={user?.profilePicture}
+                        size="sm"
+                        radius="xl"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {user?.name?.[0] || 'U'}
+                      </Avatar>
+                    </ActionIcon>
+                  </Menu.Target>
+
+                  <Menu.Dropdown
                     style={{
-                      border: `2.5px solid ${colors.primaryAccent}`,
-                      fontWeight: 700,
+                      background: colors.surface,
+                      border: `1px solid ${colors.borders}`,
                     }}
-                    color={colors.primaryAccent}
                   >
-                    {user?.name?.[0] || 'U'}
-                  </Avatar>
-                </div>
-              </Menu.Target>
-              <Menu.Dropdown
+                    <Menu.Item
+                      leftSection={<IconUser size={16} />}
+                      onClick={() => navigate('/profile')}
+                      style={menuItemStyle}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background = menuItemHoverStyle)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = 'transparent')
+                      }
+                    >
+                      Profile
+                    </Menu.Item>
+
+                    <Divider my="xs" />
+
+                    <Menu.Item
+                      leftSection={<IconLogout size={16} />}
+                      onClick={handleLogout}
+                      color="red"
+                      style={menuItemStyle}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background = menuItemHoverStyle)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = 'transparent')
+                      }
+                    >
+                      Logout
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </>
+            ) : (
+              <Button
+                onClick={() => setLoginModalOpened(true)}
                 style={{
-                  background: theme === 'light' ? '#FFF' : colors.elevatedSurface,
-                  border: `1px solid ${colors.borders}`,
-                  color: colors.textPrimary,
-                  boxShadow: '0 6px 16px rgba(0,0,0,0.07)',
-                  borderRadius: '12px',
+                  background: colors.primaryAccent,
+                  color: '#fff',
                 }}
               >
-                <Menu.Item
-                  leftSection={<IconUser size={16} style={{ color: colors.textPrimary }} />}
-                  onClick={() => navigate('/profile')}
-                  style={menuItemStyle}
-                  onMouseEnter={e => e.currentTarget.style.background = menuItemHoverStyle}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  Profile
-                </Menu.Item>
-
-                {user?.isAdmin && (
-                  <Menu.Item
-                    leftSection={<IconShield size={16} style={{ color: colors.textPrimary }} />}
-                    onClick={() => navigate('/admin')}
-                    style={menuItemStyle}
-                    onMouseEnter={e => e.currentTarget.style.background = menuItemHoverStyle}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    Admin Dashboard
-                  </Menu.Item>
-                )}
-
-                <Menu.Item
-                  leftSection={<IconBell size={16} style={{ color: colors.textPrimary }} />}
-                  onClick={() => handleNotAvailable('Notifications')}
-                  style={menuItemStyle}
-                  onMouseEnter={e => e.currentTarget.style.background = menuItemHoverStyle}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  Notifications
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconSettings size={16} style={{ color: colors.textPrimary }} />}
-                  onClick={() => handleNotAvailable('Settings')}
-                  style={menuItemStyle}
-                  onMouseEnter={e => e.currentTarget.style.background = menuItemHoverStyle}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  Settings
-                </Menu.Item>
-                <Divider style={{ borderColor: colors.borders, margin: '4px 0' }} />
-                <Menu.Item
-                  leftSection={<IconLogout size={16} />}
-                  onClick={handleLogout}
-                  color="red"
-                  style={menuItemStyle}
-                  onMouseEnter={e => e.currentTarget.style.background = menuItemHoverStyle}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  Logout
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          ) : (
-            <Button
-              variant="outline"
-              style={{
-                borderColor: colors.primaryAccent,
-                color: colors.primaryAccent,
-                fontWeight: 600
-              }}
-              onClick={() => setLoginModalOpened(true)}
-            >
-              Login / Sign up
-            </Button>
-          )}
+                Login / Sign up
+              </Button>
+            )}
+          </Group>
         </Group>
-      </nav>
+      </Box>
 
       <LoginModal opened={loginModalOpened} onClose={() => setLoginModalOpened(false)} />
+      <NotificationPanel
+        opened={notificationPanelOpened}
+        onClose={() => setNotificationPanelOpened(false)}
+      />
     </>
   );
 }

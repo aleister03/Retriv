@@ -55,6 +55,7 @@ router.post('/email-login', async (req, res) => {
         name: userName.charAt(0).toUpperCase() + userName.slice(1),
         authProvider: 'email',
         isVerified: false,
+        reputationScore: 50,
       });
       isNewUser = true;
     } else {
@@ -204,6 +205,48 @@ router.put('/profile/lock', verifyToken, checkUserStatus, async (req, res) => {
     res
       .status(500)
       .json({ message: 'Server error while toggling profile lock' });
+  }
+});
+// Delete own account
+router.delete('/delete-account', verifyToken, checkUserStatus, async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    // Find and delete the user
+    const user = await User.findByIdAndDelete(userId);
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Also delete all user's posts
+    const Post = require('../models/Post');
+    await Post.deleteMany({ user: userId });
+
+    // Delete all user's messages
+    const Message = require('../models/Message');
+    await Message.deleteMany({ 
+      $or: [{ sender: userId }, { receiver: userId }] 
+    });
+
+    // Delete all user's notifications
+    const Notification = require('../models/Notification');
+    await Notification.deleteMany({ user: userId });
+
+    res.json({ 
+      success: true, 
+      message: 'Account deleted successfully' 
+    });
+
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while deleting account' 
+    });
   }
 });
 

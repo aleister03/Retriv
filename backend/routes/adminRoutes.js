@@ -21,4 +21,12 @@ router.delete('/users/:userId', adminController.deleteUser);
 router.put('/users/:userId/promote', adminController.promoteToAdmin);
 router.put('/users/:userId/demote', adminController.demoteFromAdmin);
 
+// Post management
+router.get('/posts', adminController.getAllPosts);
+router.delete('/posts/:postId', adminController.deletePostByAdmin);
+
+// Post reports
+router.get('/reports', adminController.getPostReports);
+router.put('/reports/:postId/:reportId', adminController.updateReportStatus);
+
 module.exports = router;

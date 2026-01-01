@@ -32,8 +32,9 @@ const userSchema = new mongoose.Schema({
     default: '',
   },
   phoneNumber: {
-    type: String,
-    default: '',
+    type: Number,
+    max: 11,
+    default: null,
   },
   gender: {
     type: String,
@@ -42,7 +43,7 @@ const userSchema = new mongoose.Schema({
   },
   reputationScore: {
     type: Number,
-    default: 0,
+    default: 50,
     min: 0,
   },
   isProfileLocked: {
@@ -108,6 +109,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  bookmarkedPosts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Post',
+  }],
 });
 
 userSchema.pre('save', function(next) {

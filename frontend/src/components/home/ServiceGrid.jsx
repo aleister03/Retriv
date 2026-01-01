@@ -1,9 +1,9 @@
 import { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, Text, SimpleGrid } from '@mantine/core';
 import { IconFile, IconShoppingCart, IconArrowsExchange } from '@tabler/icons-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { showPageNotAvailable } from '../../utils/notifications';
+import { useNavigate } from 'react-router-dom';
 
 export default function ServiceGrid() {
   const { colors } = useContext(ThemeContext);
@@ -16,10 +16,10 @@ export default function ServiceGrid() {
   ];
 
   const handleCardClick = (service) => {
-    if (service.title === 'Lost & Found') {
-      navigate('/lost-found');
+    if (service.link) {
+      navigate(service.link);
     } else {
-      showPageNotAvailable(service.title);
+      showPageNotAvailable();
     }
   };
 

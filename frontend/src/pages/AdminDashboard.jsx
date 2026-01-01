@@ -105,7 +105,7 @@ export default function AdminDashboard() {
         </Group>
         <Tabs 
           value={activeTab} 
-          onTabChange={handleTabChange}
+          onChange={handleTabChange}
           styles={{
             root: {
               background: colors.surface,
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
           </Tabs.Panel>
 
           <Tabs.Panel value="requests">
-            <RequestsTab />
+            <RequestsTab onRequestUpdate={fetchStats}/>
           </Tabs.Panel>
         </Tabs>
       </Box>

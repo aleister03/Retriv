@@ -1,16 +1,22 @@
-import { useState, useContext } from "react";
-import { TextInput, Button, Paper, Title, Group, Avatar, Stack, Container, FileInput, Text, Divider, Box, ActionIcon, Select, Badge, Loader, } from "@mantine/core";
-import { IconUpload, IconCamera, IconLock, IconLockOpen } from "@tabler/icons-react";
+import { useState, useContext, useEffect } from "react";
+import { TextInput, Button, Paper, Title, Group, Avatar, Stack, Container, FileInput, Text, Divider, Box, ActionIcon, Select, Badge, Loader, Tabs, Center } from "@mantine/core";
+import { IconUpload, IconCamera, IconLock, IconLockOpen, IconEdit, IconBookmark, IconFileText } from "@tabler/icons-react";
 import { useAuth } from "../context/AuthContext";
 import { ThemeContext } from "../context/ThemeContext";
 import { showSuccess, showError } from "../utils/notifications";
+import PostCard from "../components/posts/PostCard";
+import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/auth";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 function ProfilePage() {
   const { user, token, setUser } = useAuth();
   const { theme, colors } = useContext(ThemeContext);
   
+  // Tab state
+  const [activeTab, setActiveTab] = useState("edit");
+  
+  // Form states
   const [form, setForm] = useState({
     name: user?.name || "",
     address: user?.address || "",
@@ -18,11 +24,66 @@ function ProfilePage() {
     phoneNumber: user?.phoneNumber || "",
   });
   
+  // Image states
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(user?.profilePicture || null);
+  
+  // Loading states
   const [loading, setLoading] = useState(false);
   const [pictureLoading, setPictureLoading] = useState(false);
   const [lockLoading, setLockLoading] = useState(false);
+  
+  // Posts states
+  const [myPosts, setMyPosts] = useState([]);
+  const [savedPosts, setSavedPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [savedLoading, setSavedLoading] = useState(false);
+
+  // Fetch posts when tab changes
+  useEffect(() => {
+    if (activeTab === 'posts' && token) {
+      fetchMyPosts();
+    } else if (activeTab === 'saved' && token) {
+      fetchSavedPosts();
+    }
+  }, [activeTab, token]);
+
+  const fetchMyPosts = async () => {
+    try {
+      setPostsLoading(true);
+      const response = await axios.get(`${API_BASE}/posts/my-posts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        setMyPosts(response.data.posts);
+      }
+    } catch (error) {
+      console.error('Failed to fetch my posts:', error);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  const fetchSavedPosts = async () => {
+    try {
+      setSavedLoading(true);
+      const response = await axios.get(`${API_BASE}/posts/bookmarked`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        setSavedPosts(response.data.posts);
+      }
+    } catch (error) {
+      console.error('Failed to fetch saved posts:', error);
+    } finally {
+      setSavedLoading(false);
+    }
+  };
+
+  const handlePostDeleted = (postId) => {
+    setMyPosts(myPosts.filter(p => p._id !== postId));
+    setSavedPosts(savedPosts.filter(p => p._id !== postId));
+  };
 
   const handleChange = (field) => (event) => {
     const value = event.currentTarget.value;
@@ -35,19 +96,16 @@ function ProfilePage() {
 
   const handleImageChange = (file) => {
     if (file) {
-      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         showError("Image size should be less than 5MB");
         return;
       }
-      
-      // Check file type
+
       if (!file.type.startsWith('image/')) {
         showError("Please select an image file");
         return;
       }
-      
-      console.log("File selected:", file.name, file.type, file.size);
+
       setImageFile(file);
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
@@ -67,7 +125,7 @@ function ProfilePage() {
 
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/profile`, {
+      const res = await fetch(`${API_BASE}/auth/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -109,39 +167,29 @@ function ProfilePage() {
 
     try {
       setPictureLoading(true);
-      console.log("Starting image upload...");
 
-      // Convert to base64
       const reader = new FileReader();
-      
       const imageUrl = await new Promise((resolve, reject) => {
         reader.onload = (e) => {
-          console.log("FileReader loaded successfully");
           const result = e.target.result;
           if (result && typeof result === 'string') {
-            console.log("Base64 length:", result.length);
             resolve(result);
           } else {
             reject(new Error("Failed to read file"));
           }
         };
-        
         reader.onerror = (error) => {
           console.error("FileReader error:", error);
           reject(new Error("Failed to read file"));
         };
-        
         reader.onabort = () => {
           console.error("FileReader aborted");
           reject(new Error("File reading was aborted"));
         };
-        
-        console.log("Starting to read file...");
         reader.readAsDataURL(imageFile);
       });
 
-      console.log("Sending image to server...");
-      const res = await fetch(`${API_BASE}/profile/picture`, {
+      const res = await fetch(`${API_BASE}/auth/profile/picture`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -151,7 +199,6 @@ function ProfilePage() {
       });
 
       const data = await res.json();
-      console.log("Server response:", data);
 
       if (!res.ok) {
         throw new Error(data.message || "Failed to update picture");
@@ -177,7 +224,7 @@ function ProfilePage() {
 
     try {
       setLockLoading(true);
-      const res = await fetch(`${API_BASE}/profile/lock`, {
+      const res = await fetch(`${API_BASE}/auth/profile/lock`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -192,8 +239,8 @@ function ProfilePage() {
 
       setUser(data.user);
       showSuccess(
-        data.isProfileLocked 
-          ? "Profile locked successfully!" 
+        data.isProfileLocked
+          ? "Profile locked successfully!"
           : "Profile unlocked successfully!"
       );
     } catch (err) {
@@ -205,222 +252,296 @@ function ProfilePage() {
 
   if (!user) {
     return (
-      <Container size="sm" py="xl">
-        <Paper 
-          shadow="md" 
-          p="xl" 
-          radius="md" 
-          withBorder
-          style={{ 
-            background: colors.surface,
-            borderColor: colors.borders,
-          }}
-        >
-          <Text size="lg" ta="center" style={{ color: colors.textPrimary }}>
-            Please log in to view your profile
-          </Text>
-        </Paper>
+      <Container size="md" py={50}>
+        <Center>
+          <Text color={colors.textSecondary}>Please log in to view your profile</Text>
+        </Center>
       </Container>
     );
   }
 
   return (
-    <Box style={{ background: colors.background, minHeight: '100vh', paddingTop: '2rem', paddingBottom: '2rem' }}>
-      <Container size="sm">
-        <Paper 
-          shadow="md" 
-          p="xl" 
-          radius="md" 
-          withBorder
-          style={{ 
-            background: colors.surface,
-            borderColor: colors.borders,
+    <Container size="lg" py={40} style={{ minHeight: 'calc(100vh - 200px)' }}>
+      <Paper
+        p="xl"
+        radius="md"
+        style={{
+          background: colors.surface,
+          border: `1px solid ${colors.borders}`,
+        }}
+      >
+        <Group justify="space-between" mb="xl">
+          <Title order={2} style={{ color: colors.textPrimary }}>
+            My Profile
+          </Title>
+          <Group>
+            <Badge 
+              size="lg" 
+              color={user?.isProfileLocked ? "red" : "green"}
+              variant="light"
+            >
+              {user?.isProfileLocked ? "Locked" : "Unlocked"}
+            </Badge>
+            <Button
+              leftSection={user?.isProfileLocked ? <IconLockOpen size={18} /> : <IconLock size={18} />}
+              onClick={handleToggleLock}
+              loading={lockLoading}
+              color={user?.isProfileLocked ? "red" : "green"}
+              variant="light"
+            >
+              {user?.isProfileLocked ? "Unlock" : "Lock"} Profile
+            </Button>
+          </Group>
+        </Group>
+
+        <Tabs 
+          value={activeTab} 
+          onChange={setActiveTab}
+          styles={{
+            root: {
+              marginTop: '1rem',
+            },
+            list: {
+              borderBottom: `1px solid ${colors.borders}`,
+            },
+            tab: {
+              color: colors.textSecondary,
+              fontSize: '0.95rem',
+              fontWeight: 500,
+              padding: '0.75rem 1.25rem',
+              transition: 'all 0.2s',
+              '&:hover': {
+                background: colors.elevatedSurface,
+                borderColor: colors.borders,
+              },
+              '&[data-active]': {
+                color: colors.primaryAccent,
+                borderColor: colors.primaryAccent,
+              },
+            },
+            panel: {
+              paddingTop: '1.5rem',
+            },
           }}
         >
-          <Group justify="space-between" mb="lg">
-            <Title order={2} style={{ color: colors.textPrimary }}>
+          <Tabs.List>
+            <Tabs.Tab value="edit" leftSection={<IconEdit size={18} />}>
               Edit Profile
-            </Title>
-            <Group>
-              <Badge color={user?.isProfileLocked ? "red" : "green"}>
-                {user?.isProfileLocked ? "Locked" : "Unlocked"}
-              </Badge>
-              <Button
-                variant="outline"
-                leftSection={user?.isProfileLocked ? <IconLock size={16} /> : <IconLockOpen size={16} />}
-                onClick={handleToggleLock}
-                loading={lockLoading}
-                color={user?.isProfileLocked ? "red" : "green"}
-              >
-                {user?.isProfileLocked ? "Unlock" : "Lock"} Profile
-              </Button>
-            </Group>
-          </Group>
-          <Stack align="center" mb="xl">
-            <Box pos="relative">
-              <Avatar
-                src={imagePreview}
-                size={120}
-                radius={120}
-                alt={form.name}
-                style={{ border: `3px solid ${colors.primaryAccent}` }}
-              >
-                {form.name?.[0]?.toUpperCase()}
-              </Avatar>
-              <ActionIcon
-                variant="filled"
-                radius="xl"
-                size="lg"
-                pos="absolute"
-                bottom={0}
-                right={0}
-                style={{ 
-                  cursor: "pointer",
-                  background: colors.primaryAccent,
-                }}
-              >
-                <IconCamera size={18} />
-              </ActionIcon>
-            </Box>
+            </Tabs.Tab>
+            <Tabs.Tab value="posts" leftSection={<IconFileText size={18} />}>
+              My Posts
+            </Tabs.Tab>
+            <Tabs.Tab value="saved" leftSection={<IconBookmark size={18} />}>
+              Saved
+            </Tabs.Tab>
+          </Tabs.List>
 
-            <FileInput
-              placeholder="Choose profile picture"
-              leftSection={<IconUpload size={18} />}
-              accept="image/png,image/jpeg,image/jpg,image/webp"
-              onChange={handleImageChange}
-              clearable
-              style={{ width: "100%" }}
-              styles={{
-                input: {
-                  background: colors.elevatedSurface,
-                  color: colors.textPrimary,
-                  borderColor: colors.borders,
-                }
-              }}
-            />
+          <Tabs.Panel value="edit">
+            <Stack gap="md">
+              <Group justify="center" mb="md">
+                <Avatar
+                  src={imagePreview}
+                  size={120}
+                  radius={120}
+                  style={{
+                    border: `3px solid ${colors.primaryAccent}`,
+                  }}
+                >
+                  {form.name?.[0]?.toUpperCase()}
+                </Avatar>
+              </Group>
 
-            {imageFile && (
-              <Button
-                onClick={handleSavePicture}
-                loading={pictureLoading}
-                variant="light"
-                fullWidth
-              >
-                {pictureLoading ? "Uploading..." : "Upload Profile Picture"}
-              </Button>
-            )}
-          </Stack>
-
-          <Divider 
-            my="lg" 
-            label="Personal Information" 
-            labelPosition="center"
-            style={{ borderColor: colors.borders }}
-            styles={{
-              label: { color: colors.textSecondary }
-            }}
-          />
-
-          <Stack gap="md">
-            <TextInput
-              label="Full Name"
-              placeholder="Enter your name"
-              value={form.name}
-              onChange={handleChange("name")}
-              required
-              withAsterisk
-              styles={{
-                input: {
-                  background: colors.elevatedSurface,
-                  color: colors.textPrimary,
-                  borderColor: colors.borders,
-                },
-                label: { color: colors.textPrimary }
-              }}
-            />
-
-            <TextInput
-              label="Phone Number"
-              placeholder="Enter your phone number"
-              value={form.phoneNumber}
-              onChange={handleChange("phoneNumber")}
-              type="tel"
-              styles={{
-                input: {
-                  background: colors.elevatedSurface,
-                  color: colors.textPrimary,
-                  borderColor: colors.borders,
-                },
-                label: { color: colors.textPrimary }
-              }}
-            />
-
-            <Select
-              label="Gender"
-              placeholder="Select your gender"
-              value={form.gender}
-              onChange={handleGenderChange}
-              data={[
-                { value: 'Male', label: 'Male' },
-                { value: 'Female', label: 'Female' },
-              ]}
-              clearable
-              styles={{
-                input: {
-                  background: colors.elevatedSurface,
-                  color: colors.textPrimary,
-                  borderColor: colors.borders,
-                },
-                label: { color: colors.textPrimary },
-                dropdown: {
-                  background: colors.elevatedSurface,
-                  borderColor: colors.borders,
-                },
-                option: {
-                  color: colors.textPrimary,
-                  '&[data-selected]': {
-                    background: colors.primaryAccent,
+              <FileInput
+                leftSection={<IconCamera size={18} />}
+                label="Profile Picture"
+                placeholder="Choose an image"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                onChange={handleImageChange}
+                clearable
+                style={{ width: "100%" }}
+                styles={{
+                  label: { color: colors.textPrimary, marginBottom: '0.5rem' },
+                  input: {
+                    background: colors.elevatedSurface,
+                    color: colors.textPrimary,
+                    borderColor: colors.borders,
                   },
-                  '&:hover': {
-                    background: colors.hoverAccent,
-                  }
-                }
-              }}
-            />
+                }}
+              />
 
-            <TextInput
-              label="Address"
-              placeholder="Enter your address"
-              value={form.address}
-              onChange={handleChange("address")}
-              styles={{
-                input: {
-                  background: colors.elevatedSurface,
-                  color: colors.textPrimary,
-                  borderColor: colors.borders,
-                },
-                label: { color: colors.textPrimary }
-              }}
-            />
+              {imageFile && (
+                <Button
+                  fullWidth
+                  onClick={handleSavePicture}
+                  loading={pictureLoading}
+                  color={colors.primaryAccent}
+                  leftSection={<IconUpload size={18} />}
+                >
+                  {pictureLoading ? "Uploading..." : "Upload Profile Picture"}
+                </Button>
+              )}
 
-            <Text size="sm" c="dimmed" style={{ color: colors.textSecondary }}>
-              Email: {user?.email}
-            </Text>
+              <Divider my="sm" color={colors.borders} />
 
-            <Group justify="flex-end" mt="md">
+              <TextInput
+                label="Name"
+                placeholder="Your name"
+                value={form.name}
+                onChange={handleChange("name")}
+                required
+                styles={{
+                  label: { color: colors.textPrimary, marginBottom: '0.5rem' },
+                  input: {
+                    background: colors.elevatedSurface,
+                    color: colors.textPrimary,
+                    borderColor: colors.borders,
+                  },
+                }}
+              />
+
+              <TextInput
+                label="Email"
+                value={user?.email}
+                disabled
+                styles={{
+                  label: { color: colors.textPrimary, marginBottom: '0.5rem' },
+                  input: {
+                    background: colors.elevatedSurface,
+                    color: colors.textSecondary,
+                    borderColor: colors.borders,
+                  },
+                }}
+              />
+
+              <TextInput
+                label="Phone Number"
+                placeholder="Your phone number"
+                value={form.phoneNumber}
+                onChange={handleChange("phoneNumber")}
+                styles={{
+                  label: { color: colors.textPrimary, marginBottom: '0.5rem' },
+                  input: {
+                    background: colors.elevatedSurface,
+                    color: colors.textPrimary,
+                    borderColor: colors.borders,
+                  },
+                }}
+              />
+
+              <Select
+                label="Gender"
+                placeholder="Select gender"
+                value={form.gender}
+                onChange={handleGenderChange}
+                data={["Male", "Female"]}
+                clearable
+                styles={{
+                  label: { color: colors.textPrimary, marginBottom: '0.5rem' },
+                  input: {
+                    background: colors.elevatedSurface,
+                    color: colors.textPrimary,
+                    borderColor: colors.borders,
+                  },
+                }}
+              />
+
+              <TextInput
+                label="Address"
+                placeholder="Your address"
+                value={form.address}
+                onChange={handleChange("address")}
+                styles={{
+                  label: { color: colors.textPrimary, marginBottom: '0.5rem' },
+                  input: {
+                    background: colors.elevatedSurface,
+                    color: colors.textPrimary,
+                    borderColor: colors.borders,
+                  },
+                }}
+              />
+
               <Button
+                fullWidth
                 onClick={handleSaveProfile}
                 loading={loading}
+                mt="md"
                 size="md"
-                style={{ background: colors.primaryAccent }}
+                style={{
+                  background: colors.primaryAccent,
+                  color: '#fff',
+                }}
               >
                 Save Changes
               </Button>
-            </Group>
-          </Stack>
-        </Paper>
-      </Container>
-    </Box>
+            </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="posts">
+            {postsLoading ? (
+              <Center py={60}>
+                <Loader size="lg" color={colors.primaryAccent} />
+              </Center>
+            ) : myPosts.length === 0 ? (
+              <Center py={60}>
+                <Stack align="center" gap="md">
+                  <IconFileText size={64} color={colors.textSecondary} stroke={1.5} />
+                  <Text size="lg" fw={600} c={colors.textPrimary}>
+                    No Posts Yet
+                  </Text>
+                  <Text size="sm" c={colors.textSecondary}>
+                    You haven't created any posts. Start sharing now!
+                  </Text>
+                </Stack>
+              </Center>
+            ) : (
+              <Stack gap="lg">
+                {myPosts.map((post) => (
+                  <PostCard
+                    key={post._id}
+                    post={post}
+                    onDelete={handlePostDeleted}
+                    currentUserId={user?._id}
+                    onUpdate={fetchMyPosts}
+                  />
+                ))}
+              </Stack>
+            )}
+          </Tabs.Panel>
+
+          <Tabs.Panel value="saved">
+            {savedLoading ? (
+              <Center py={60}>
+                <Loader size="lg" color={colors.primaryAccent} />
+              </Center>
+            ) : savedPosts.length === 0 ? (
+              <Center py={60}>
+                <Stack align="center" gap="md">
+                  <IconBookmark size={64} color={colors.textSecondary} stroke={1.5} />
+                  <Text size="lg" fw={600} c={colors.textPrimary}>
+                    No Saved Posts
+                  </Text>
+                  <Text size="sm" c={colors.textSecondary}>
+                    Bookmark posts to see them here.
+                  </Text>
+                </Stack>
+              </Center>
+            ) : (
+              <Stack gap="lg">
+                {savedPosts.map((post) => (
+                  <PostCard
+                    key={post._id}
+                    post={post}
+                    onDelete={handlePostDeleted}
+                    currentUserId={user?._id}
+                    onUpdate={fetchSavedPosts}
+                  />
+                ))}
+              </Stack>
+            )}
+          </Tabs.Panel>
+        </Tabs>
+      </Paper>
+    </Container>
   );
 }
 
